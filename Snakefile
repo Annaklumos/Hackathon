@@ -20,7 +20,7 @@ rule chrm: #je ne sais pas quoi faire pour le input
     input:
         #???
     output:
-        "ref/human_genome.fa" #pas sure qu'il faille pas creer le dossier
+        "ref/human_genome.fa"
     shell:
         """
             mkdir ref
@@ -75,7 +75,9 @@ rule mapping_samtools: # hmm pourquoi *.bam ?
     container:
         "docker://evolbioinfo/samtools:v1.11"
     shell:
-        "samtools index *.bam"
+    """
+        samtools index *.bam
+    """
 
 rule annotation:
     input:
