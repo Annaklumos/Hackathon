@@ -36,6 +36,8 @@ rule index:
     input:
         "human_genome.fa"
     output:
+        "ref/Log.out"  "ref/chrLength.txt"  "ref/chrName.txt"  "ref/chrNameLength.txt"  "ref/chrStart.txt" "ref/genomeParameters.txt"
+
     container:
         "docker://evolbioinfo/star:v2.7.6a"
     shell: #peut donner max de CPU de la machine ?
@@ -88,6 +90,7 @@ rule annotation:
         """
             wget -O human_genome.gtf {input}
         """
+
 rule counting:
     input:
         "{SAMPLE}.bam"
