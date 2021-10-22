@@ -3,7 +3,7 @@ samples = ["SRR628582","SRR628583","SRR628584","SRR628585","SRR628586","SRR62858
 
 rule all:
  input:
-  expand("{SAMPLE}.counts", SAMPLE=samples)
+  expand(["{SAMPLE}_fastqc.html","{SAMPLE}_1_fastqc.html","{SAMPLE}_2_fastqc.html"], SAMPLE=samples)
 
 rule fastq: #permet d'obtenir les deux fichiers du paired-end (sample_1.fastq + sample_2.fastq)
  output:
@@ -110,3 +110,22 @@ rule counting:
   """
    featureCounts -T 16 -t gene -g gene_id -s 0 -a {input.genome} -o {output} {input.bam}
   """
+
+rule fastqc:
+ input:
+  bam="{SAMPLE}.bam",
+  sample1="{SAMPLE}_1.fastq",
+  sample2="{SAMPLE}_2.fastq"
+ output:
+  "{SAMPLE}_fastqc.html", "{SAMPLE}_1_fastqc.html", "{SAMPLE}_2_fastqc.html"
+ resources:
+  load=1
+ conda:
+  "../envs/fastqc.yaml"
+ shell:
+  """
+   fastqc {input.bam}
+   fastqc {input.sample1}
+   fastqc {input.sample2}
+  """
+
