@@ -1,5 +1,4 @@
 # # TODO:
-# remplacer les ressources load par threads et préciser le nombre de core dans la ligne de commande ?
 # Fichier config ?
 
 
@@ -9,13 +8,10 @@ samples = ["SRR628582","SRR628583","SRR628584","SRR628585","SRR628586","SRR62858
 type_counts = ["gene", "exon"]
 strand = ["0","1","2"]
 
-rule all:
+rule all: #recupere fastqc + counts
  input:
-  expand(["{SAMPLE}_fastqc.html","{SAMPLE}_1_fastqc.html","{SAMPLE}_2_fastqc.html"], SAMPLE=samples)
-<<<<<<< HEAD
-=======
+  expand(["{SAMPLE}_fastqc.html","{SAMPLE}_1_fastqc.html","{SAMPLE}_2_fastqc.html",  "{TYPE}_strand_{STRAND}/{SAMPLE}_{TYPE}_{STRAND}.counts"], TYPE=type_counts, STRAND=strand, SAMPLE=samples)
 
->>>>>>> cf176a0 (Rule COUNTS analyse tous les strands et position ? + modifie fastqc pour avoir docker (fonctionnait pas sinon ?) + ajout thread (=nb de cpu))
 
 rule fastq: #permet d'obtenir les deux fichiers du paired-end (sample_1.fastq + sample_2.fastq)
  output:
@@ -27,8 +23,7 @@ rule fastq: #permet d'obtenir les deux fichiers du paired-end (sample_1.fastq + 
  shell:
   "fasterq-dump {wildcards.sample}"
 
-# Remplacer par ftp://ftp.ensembl.org/pub/release-93/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.primary_assembly.fa.gz ? fichier plus
-# verifier [!-d]
+
 rule chrm: #télécharge tous les chromosomes humains et regroupe en un seul fasta
  output:
   "ref/human_genome.fa"
@@ -45,13 +40,13 @@ rule chrm: #télécharge tous les chromosomes humains et regroupe en un seul fas
    done
    gunzip -c *.fa.gz > {output}
   """
-# SA.index
-rule index:
+
+rule index: #index genome
  input:
   "ref/human_genome.fa"
  output:
-  "ref/SAindex"
- resources: #précedememnt load = 1
+  "ref/SAindex" #dernier fichier généré théoriquement
+ resources:
   load=1
  threads:
   16
@@ -59,10 +54,10 @@ rule index:
   "docker://evolbioinfo/star:v2.7.6a"
  shell: "STAR --runThreadN {threads} --runMode genomeGenerate --genomeDir ref/ --genomeFastaFiles {input}"
 
-rule mapping_star: #CPU : minimum 16 et ram minimum autant que le génome en théorie
+rule mapping_star: #aligne reads sur genome
  input:
-  index="ref/SAindex",
-  genome="ref/human_genome.fa",
+  index="ref/SAindex", #index fait
+  genome="ref/human_genome.fa", #chrm fait
   sample1="{SAMPLE}_1.fastq",
   sample2="{SAMPLE}_2.fastq"
  output:
@@ -90,7 +85,7 @@ rule mapping_star: #CPU : minimum 16 et ram minimum autant que le génome en th�
   """
 
 
-rule mapping_samtools:
+rule mapping_samtools: #indexe bam
  input:
   "{SAMPLE}.bam"
  output:
@@ -104,7 +99,7 @@ rule mapping_samtools:
    samtools index {input}
   """
 
-rule annotation:
+rule annotation: # télécharge gtf du génome
  output:
   "human_genome.gtf"
  resources:
@@ -114,7 +109,7 @@ rule annotation:
    wget -O {output} ftp://ftp.ensembl.org/pub/release-101/gtf/homo_sapiens/Homo_sapiens.GRCh38.101.chr.gtf.gz
   """
 
-rule counting:
+rule counting: #compte nombre de reads par gène|exon et chaque strand
  input:
   bam="{SAMPLE}.bam",
   bai="{SAMPLE}.bam.bai",
@@ -137,7 +132,7 @@ rule counting:
    featureCounts -T {threads} -t {wildcards.TYPE} -g gene_id -s {wildcards.STRAND} -a {input.genome} -o {output} {input.bam}
   """
 
-rule fastqc:
+rule fastqc: #verifie qualité des fastq et bam
  input:
   bam="{SAMPLE}.bam",
   sample1="{SAMPLE}_1.fastq",
@@ -154,22 +149,3 @@ rule fastqc:
    fastqc {input.sample1}
    fastqc {input.sample2}
   """
-
-rule fastqc:
- input:
-  bam="{SAMPLE}.bam",
-  sample1="{SAMPLE}_1.fastq",
-  sample2="{SAMPLE}_2.fastq"
- output:
-  "{SAMPLE}_fastqc.html", "{SAMPLE}_1_fastqc.html", "{SAMPLE}_2_fastqc.html"
- resources:
-  load=1
- conda:
-  "../envs/fastqc.yaml"
- shell:
-  """
-   fastqc {input.bam}
-   fastqc {input.sample1}
-   fastqc {input.sample2}
-  """
-
