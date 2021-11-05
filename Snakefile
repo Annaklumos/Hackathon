@@ -31,9 +31,6 @@ rule chrm: #télécharge tous les chromosomes humains et regroupe en un seul fas
   load=1
  shell:
   """
-   if [ ! -d ref ];then
-   	mkdir ref
-   fi
    for chr in "1" "2" "3" "4" "5" "6" "7" "8" "9" "10" "11" "12" "13" "14" "15" "16" "17" "18" "19" "20" "21" "22" "MT" "X" "Y";
    do
    	wget -O "$chr".fa.gz ftp://ftp.ensembl.org/pub/release-101/fasta/homo_sapiens/dna/Homo_sapiens.GRCh38.dna.chromosome."$chr".fa.gz
@@ -81,7 +78,7 @@ rule mapping_star: #aligne reads sur genome
    --outStd BAM_SortedByCoordinate \
    --genomeLoad NoSharedMemory \
    --limitBAMsortRAM 31000000000 \
-   --outFileNamePrefix {wildcards.SAMPLE}> {output}
+   --outFileNamePrefix {wildcards.SAMPLE} > {output}
   """
 
 
@@ -106,7 +103,8 @@ rule annotation: # télécharge gtf du génome
   load=1
  shell:
   """
-   wget -O {output} ftp://ftp.ensembl.org/pub/release-101/gtf/homo_sapiens/Homo_sapiens.GRCh38.101.chr.gtf.gz
+   wget -O {output}.gz ftp://ftp.ensembl.org/pub/release-101/gtf/homo_sapiens/Homo_sapiens.GRCh38.101.chr.gtf.gz
+   gunzip {output}
   """
 
 rule counting: #compte nombre de reads par gène|exon et chaque strand
@@ -126,9 +124,6 @@ rule counting: #compte nombre de reads par gène|exon et chaque strand
   4
  shell:
   """
-   if [ ! -d {params.dir} ];then
-    mkdir {params.dir}
-   fi
    featureCounts -T {threads} -t {wildcards.TYPE} -g gene_id -s {wildcards.STRAND} -a {input.genome} -o {output} {input.bam}
   """
 
