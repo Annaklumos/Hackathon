@@ -8,15 +8,15 @@ type_counts = ["gene", "exon"]
 
 strand = ["0","1","2"]
 
-rule all: #recupere fastqc + analyse des fichiers de comptage.
+rule all: #recupere fastqc + analyse des fichiers de comptage
  input:
-  expand(["{SAMPLE}_fastqc.html","{SAMPLE}_1_fastqc.html","{SAMPLE}_2_fastqc.html",  "PCA.pdf","VolcanoPlot.pdf","Deseq2_results_table.txt"], TYPE=type_counts, STRAND=strand, SAMPLE=samples)
+  expand(["FASTQC/{SAMPLE}_fastqc.html","FASTQC/{SAMPLE}_1_fastqc.html","FASTQC/{SAMPLE}_2_fastqc.html","PCA.pdf","Deseq2_results_table.txt","VolcanoPlot.pdf"], TYPE=type_counts, STRAND=strand, SAMPLE=samples)
 
 
 rule fastq: #permet d'obtenir les deux fichiers du paired-end (sample_1.fastq + sample_2.fastq)
  output:
   "{sample}_1.fastq","{sample}_2.fastq"
- resources: #pour éviter de surcharger mémoire avec fichier temporaires, on limite les ressources
+ resources: #pour éviter de surcharger la mémoire avec les fichiers temporaires, on limite les ressources
   load=20
  singularity:
    "docker://pegi3s/sratoolkit:2.10.0"
@@ -54,7 +54,6 @@ rule index: #index genome
 rule mapping_star: #aligne reads sur genome
  input:
   index="ref/SAindex", #vérification que l'indexation du génome a été faite
-  genome="ref/human_genome.fa", #vérification qu'on a le génome
   sample1="{SAMPLE}_1.fastq",
   sample2="{SAMPLE}_2.fastq"
  output:
@@ -82,7 +81,7 @@ rule mapping_star: #aligne reads sur genome
   """
 
 
-rule mapping_samtools: #indexation des fichiers bam
+rule mapping_samtools: #indexation des fichiers d'alignement (bam)
  input:
   "{SAMPLE}.bam"
  output:
@@ -128,7 +127,7 @@ rule counting: #compte nombre de reads par gène|exon et chaque strand
   """
 #-T =  nombre de theads utilisé par featureCounts
 #-t =  type d'éléments génétique
-#-s = 0 -->unstranded, 1 --> stranded 2--> reversely stranded
+#-s = 0 -->unstranded, 1 --> stranded 2--> reversely stranded 
 
 rule fastqc: #verifie qualité des fastq et bam
  input:
@@ -136,24 +135,24 @@ rule fastqc: #verifie qualité des fastq et bam
   sample1="{SAMPLE}_1.fastq",
   sample2="{SAMPLE}_2.fastq"
  output:
-  "{SAMPLE}_fastqc.html", "{SAMPLE}_1_fastqc.html", "{SAMPLE}_2_fastqc.html"
+  "FASTQC/{SAMPLE}_fastqc.html", "FASTQC/{SAMPLE}_1_fastqc.html", "FASTQC/{SAMPLE}_2_fastqc.html"
  resources:
   load=1
  singularity:
   "docker://pegi3s/fastqc"
  shell:
   """
-   fastqc {input.bam}
-   fastqc {input.sample1}
-   fastqc {input.sample2}
+   fastqc {input.bam} -o FASTQC
+   fastqc {input.sample1} -o FASTQC
+   fastqc {input.sample2} -o FASTQC
   """
 
 rule Deseq: #analyse des fichiers de comptage
- input:
+ input: 
   expand("gene_strand_0/{SAMPLE}_gene_0.counts",SAMPLE=samples)
  output:
-  "PCA.pdf","VolcanoPlot.pdf","Deseq2_results_table.txt"
+  "PCA.pdf","Deseq2_results_table.txt","VolcanoPlot.pdf"
  singularity:
-  "docker://kamirab/r_deseq_pca:latest"
+  "docker://kamirab/r_deseq_pca"
  script:
   "script_analyse_deseq.R"

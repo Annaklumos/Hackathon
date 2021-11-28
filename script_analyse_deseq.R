@@ -31,9 +31,8 @@ row.names(Type) <- c(2, 3, 4, 5, 6, 7, 8, 9)
 colnames(Type) <- "Type"
 
 # PCA
-resPCA <- PCA(df_t)
 pdf("PCA.pdf")
-fviz_pca_ind(resPCA,col.ind = Type)
+fviz_pca_ind(PCA(df_t,graph=F),col.ind = Type)
 dev.off()
 
 
@@ -46,12 +45,11 @@ write.table(res, "Deseq2_results_table.txt", sep = "\t", row.names = TRUE, col.n
 #Normaliser 
 vst = getVarianceStabilizedData(analysis)
 vst_t <- t(vst)
-PCA(vst_t)
+#PCA(vst_t)
 
 
 res_mat <- as.matrix(res)
 res_mat <- cbind(id_gene, res_mat)
-res_mat
 
 # Lignes dont la pvalue ajustee est < 0.05
 ind_padj <- res_mat[,"padj"]
@@ -63,6 +61,3 @@ logp <- -log10(res_mat[,"padj"])
 pdf("VolcanoPlot.pdf")
 plot(logp~res_mat[,"log2FoldChange"])
 dev.off()
-
-# vst() #pour normaliser donnees
-#ensembl ebi --> pour regarder nom de genes
