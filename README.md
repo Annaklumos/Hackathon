@@ -2,9 +2,12 @@
 
 ## Installations pré-requises et commande pour lancer le script
 La commande à lancer est :
-$ snakemake --use-singularity --resources load=100 --cores all
-
-Afin de lancer le workflow, Snakemake et singularity doivent être installés.
+```
+snakemake --use-singularity --resources load=100 --cores all
+```
+Afin de lancer le workflow, Snakemake et singularity doivent être installés.  
+```conda install snakemake```  
+```conda install singularity```
 
 ## Résumé du workflow
 Le script télécharge l'ensemble des FASTQ issus des expériences de RNAseq présent dans la liste "samples", puis télécharge les chromosomes humains et les regroupe en un fichier du génome.Il télécharge aussi le fichier d'annotation du génome humain.
