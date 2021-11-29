@@ -10,7 +10,7 @@ strand = ["0","1","2"]
 
 rule all: #recupere fastqc + analyse des fichiers de comptage
  input:
-  expand(["FASTQC/{SAMPLE}_fastqc.html","FASTQC/{SAMPLE}_1_fastqc.html","FASTQC/{SAMPLE}_2_fastqc.html","PCA.pdf","Deseq2_results_table.txt","VolcanoPlot.pdf"], TYPE=type_counts, STRAND=strand, SAMPLE=samples)
+  expand(["FASTQC/{SAMPLE}_fastqc.html","FASTQC/{SAMPLE}_1_fastqc.html","FASTQC/{SAMPLE}_2_fastqc.html","VolcanoPlot.pdf"], TYPE=type_counts, STRAND=strand, SAMPLE=samples)
 
 
 rule fastq: #permet d'obtenir les deux fichiers du paired-end (sample_1.fastq + sample_2.fastq)
@@ -109,7 +109,7 @@ rule annotation: # télécharge fichier d'annotation du génome
 rule counting: #compte nombre de reads par gène|exon et chaque strand
  input:
   bam="{SAMPLE}.bam",
-  bai="{SAMPLE}.bam.bai",
+  bai="{SAMPLE}.bam.bai", #vérification que l'indexation des bam a été faite
   genome="human_genome.gtf"
  output:
   "{TYPE}_strand_{STRAND}/{SAMPLE}_{TYPE}_{STRAND}.counts"
@@ -127,7 +127,7 @@ rule counting: #compte nombre de reads par gène|exon et chaque strand
   """
 #-T =  nombre de theads utilisé par featureCounts
 #-t =  type d'éléments génétique
-#-s = 0 -->unstranded, 1 --> stranded 2--> reversely stranded 
+#-s = 0 -->unstranded, 1 --> stranded 2--> reversely stranded
 
 rule fastqc: #verifie qualité des fastq et bam
  input:
@@ -147,11 +147,11 @@ rule fastqc: #verifie qualité des fastq et bam
    fastqc {input.sample2} -o FASTQC
   """
 
-rule Deseq: #analyse des fichiers de comptage
- input: 
+rule Deseq: #analyse des fichiers de comptage pour les gènes unstranded
+ input:
   expand("gene_strand_0/{SAMPLE}_gene_0.counts",SAMPLE=samples)
  output:
-  "PCA.pdf","Deseq2_results_table.txt","VolcanoPlot.pdf"
+  "PCA_expressed_normalized.pdf","PCA_not_normalized.pdf","Deseq2_results_4mutants_table.txt","Deseq2_results_3mutants_table.txt","VolcanoPlot.pdf"
  singularity:
   "docker://kamirab/r_deseq_pca"
  script:
